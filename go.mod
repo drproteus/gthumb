@@ -1,4 +1,4 @@
-module earthmanlabs/guppythumb
+module earthmanlabs/gthumb
 
 go 1.25.5
 
