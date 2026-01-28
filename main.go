@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"image"
+	"math"
 
 	"github.com/anthonynsimon/bild/imgio"
 	"github.com/anthonynsimon/bild/transform"
@@ -10,14 +12,27 @@ import (
 	log "github.com/dsoprea/go-logging"
 )
 
+// EXIF Orientations
+const (
+	Horizontal                  = 1
+	MirrorHorizontal            = 2
+	Rotate180                   = 3
+	MirrorVertical              = 4
+	MirrorHorizontalRotate270CW = 5
+	Rotate90CW                  = 6
+	MirrorHorizontalRotate90CW  = 7
+	Rotate270CW                 = 8
+)
+const THUMB_QUALITY = 80
+const THUMB_SCALE = 8
+
 func main() {
 	buffer, err := imgio.Open("examples/image.jpg")
 	log.PanicIf(err)
 	bounds := buffer.Bounds().Max
-	thumbnail := transform.Resize(buffer, bounds.X/4, bounds.Y/4, transform.Linear)
-	if err := imgio.Save("examples/thumb.jpg", thumbnail, imgio.JPEGEncoder(100)); err != nil {
-		panic(err)
-	}
+	newWidth, newHeight := bounds.X/THUMB_SCALE, bounds.Y/THUMB_SCALE
+	minWidth := math.Min(float64(newWidth), float64(newHeight))
+	thumbnail := transform.Resize(buffer, newWidth, newHeight, transform.Linear)
 	rawExif, err := exif.SearchFileAndExtractExif("examples/image.jpg")
 	im, err := exifcommon.NewIfdMappingWithStandard()
 	log.PanicIf(err)
@@ -31,29 +46,23 @@ func main() {
 		panic("Failed to find 'Orientation' in EXIF!")
 	}
 	ite := results[0]
-
 	valueRaw, err := ite.Value()
 	log.PanicIf(err)
-	// EXIF Orientations
-	// 1 = Horizontal (normal)
-	// 2 = Mirror horizontal
-	// 3 = Rotate 180
-	// 4 = Mirror vertical
-	// 5 = Mirror horizontal and rotate 270 CW
-	// 6 = Rotate 90 CW
-	// 7 = Mirror horizontal and rotate 90 CW
-	// 8 = Rotate 270 CW
 	value := valueRaw.([]uint16)[0]
-	switch value {
-	case 1:
-		fmt.Println(value, "Normal")
-	case 2:
-		fmt.Println(value, "Mirror horizontal")
-	case 3:
-		fmt.Println(value, "Rotate 180")
-	case 4:
-		fmt.Println(value, "Mirror vertical")
-	default:
-		fmt.Println(value, "TODO")
+	if value != Horizontal {
+		// Must rotate
+		if value == Rotate180 {
+			thumbnail = transform.Rotate(thumbnail, 180, &transform.RotationOptions{})
+		} else {
+			// TODO: Handle other orientations
+			fmt.Println("WARNING: Unhandled orientation", value)
+		}
+	} else {
+		// Save as-is
+	}
+	// Crop to square, should try to center the cropped rectangle later
+	thumbnail = transform.Crop(thumbnail, image.Rect(0, 0, int(minWidth), int(minWidth)))
+	if err := imgio.Save("examples/thumb.jpg", thumbnail, imgio.JPEGEncoder(THUMB_QUALITY)); err != nil {
+		panic(err)
 	}
 }
