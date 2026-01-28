@@ -33,3 +33,5 @@ go.work.sum
 
 *.html
 main
+examples/*
+!examples/image.jpg
