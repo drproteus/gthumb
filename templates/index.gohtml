@@ -333,6 +333,8 @@
     text-overflow: ellipsis;
   }
 
+  figcaption:empty { display: none; }
+
   .more {
     display: flex;
     justify-content: center;
@@ -845,7 +847,7 @@
             <figcaption class="small text-body-secondary text-truncate mt-1">
               {{- if .Taken}}{{.Taken}}{{end}}
               {{- if and .Taken .Camera}} / {{end}}
-              {{- if .Camera}}{{.Camera}}{{end}}
+              {{- if .Camera}}{{.Camera}}{{end -}}
             </figcaption>
           </figure>
         </li>
@@ -861,7 +863,7 @@
   </main>
 
   <footer class="d-flex justify-content-between small text-body-secondary border-top px-3 py-3 mt-4">
-    <span>Generated with gthumb</span>
+    <span>Generated with <a href="https://github.com/drproteus/gthumb">gthumb</a></span>
     <span><span class="flickr-pink">&bull;</span> <span class="flickr-blue">&bull;</span></span>
   </footer>
 </div>
