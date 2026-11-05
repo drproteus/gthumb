@@ -45,6 +45,69 @@ public/
 * **Display images:** scaled down to fit within `-max` on the longest edge. Images are never upscaled.
 * **Template:** `templates/index.gohtml` is a plain `html/template`, so the layout can be changed without rebuilding.
 
+## Adding a theme
+
+Themes are CSS blocks inside `templates/index.gohtml`. The page offers a Theme
+dropdown in the top bar. Only one theme's stylesheets are enabled at a time, and
+the choice is saved in the browser's localStorage under `gthumb-theme`.
+
+The shipped themes are:
+
+* `default`: Bootstrap 5 loaded from a CDN, with minimal custom CSS
+* `metro`: Flickr-style colors with a brutalist look
+* `terminal`: dark, mono-type look
+
+To add a theme (called `mytheme` here):
+
+1. **Add a stylesheet.** Copy an existing `<style>` block, such as `id="theme-terminal"`,
+   and give it a new id and `data-theme-style` value. Keep the `disabled` attribute.
+   Put the block in `<head>` before the theme-switching `<script>`:
+
+   ```html
+   <style id="theme-mytheme" data-theme-style="mytheme" disabled>
+     :root { --accent: #ff6600; }
+     .photo { border: 2px solid var(--accent); }
+   </style>
+   ```
+
+2. **Register the name.** Add it to the `names` array in the head script. The saved
+   theme is checked against this list, and an unknown name falls back to `default`:
+
+   ```js
+   var names = ["default", "metro", "terminal", "mytheme"];
+   ```
+
+3. **Add the dropdown option** in `<select id="theme-select">`:
+
+   ```html
+   <option value="mytheme">My Theme</option>
+   ```
+
+Style the markup with these class hooks:
+
+| Element | Classes |
+|---|---|
+| Page wrapper | `.site` |
+| Top bar | `.topbar`, `.brand`, `.dots`, `.wordmark`, `.toolbar`, `.count`, `.theme-picker`, `.theme-select` |
+| Albums | `main.gallery`, `section.album`, `h2.album-title` (`.album-name`, `.album-count`) |
+| Photos | `ul.grid`, `li.photo-item`, `a.photo`, `img`, `figcaption` |
+| Expand button | `.more`, `.more-btn` |
+| Footer | `footer` |
+| Lightbox | `dialog.lightbox`, `.lb-btn`, `.lb-close`, `.lb-prev`, `.lb-next` |
+
+Notes:
+
+* The `base` stylesheet, which is always enabled, handles layout that every theme
+  needs: lightbox positioning and the `[hidden]` rule for the expand button. Themes
+  only need to set colors, type, and decoration.
+* Bootstrap utility classes such as `row`, `col`, and `btn` are on the markup for the
+  default theme. Other themes can ignore them.
+* To load a framework for only your theme, add a `<link>` with the same
+  `data-theme-style` value and `disabled`. It is enabled only while your theme is active.
+
+To test, build with `go run .`, open `public/index.html`, and switch themes with the
+dropdown. You can also run `gthumbSetTheme("mytheme")` in the browser console.
+
 ## Development
 
 ```sh
