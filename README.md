@@ -6,6 +6,8 @@ gthumb scans a directory for JPEG photos, applies their EXIF orientation, writes
 square thumbnails and display-size copies, and produces a single-page static
 gallery (`index.html`) that can be hosted anywhere.
 
+![Metro theme with demo albums](docs/screenshot-metro.png)
+
 ## Usage
 
 ```sh
