@@ -1,68 +1,25 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"image"
-	"math"
-
-	"github.com/anthonynsimon/bild/imgio"
-	"github.com/anthonynsimon/bild/transform"
-	exif "github.com/dsoprea/go-exif/v3"
-	exifcommon "github.com/dsoprea/go-exif/v3/common"
-	log "github.com/dsoprea/go-logging"
+	"os"
 )
-
-// EXIF Orientations
-const (
-	Horizontal                  = 1
-	MirrorHorizontal            = 2
-	Rotate180                   = 3
-	MirrorVertical              = 4
-	MirrorHorizontalRotate270CW = 5
-	Rotate90CW                  = 6
-	MirrorHorizontalRotate90CW  = 7
-	Rotate270CW                 = 8
-)
-const THUMB_QUALITY = 80
-const THUMB_SCALE = 8
 
 func main() {
-	buffer, err := imgio.Open("examples/image.jpg")
-	log.PanicIf(err)
-	bounds := buffer.Bounds().Max
-	newWidth, newHeight := bounds.X/THUMB_SCALE, bounds.Y/THUMB_SCALE
-	minWidth := math.Min(float64(newWidth), float64(newHeight))
-	thumbnail := transform.Resize(buffer, newWidth, newHeight, transform.Linear)
-	rawExif, err := exif.SearchFileAndExtractExif("examples/image.jpg")
-	im, err := exifcommon.NewIfdMappingWithStandard()
-	log.PanicIf(err)
-	ti := exif.NewTagIndex()
-	_, index, err := exif.Collect(im, ti, rawExif)
-	log.PanicIf(err)
-	tagName := "Orientation"
-	rootIfd := index.RootIfd
-	results, err := rootIfd.FindTagWithName(tagName)
-	if len(results) < 1 {
-		panic("Failed to find 'Orientation' in EXIF!")
+	var opts Options
+	flag.StringVar(&opts.Src, "src", "examples", "directory to scan for albums of JPEG images")
+	flag.StringVar(&opts.Out, "out", "public", "output directory for the generated site")
+	flag.StringVar(&opts.Templates, "templates", "templates", "directory containing index.gohtml")
+	flag.StringVar(&opts.Title, "title", "gthumb", "site title")
+	flag.IntVar(&opts.ThumbSize, "thumb", 400, "thumbnail edge length in pixels (square crop)")
+	flag.IntVar(&opts.MaxSize, "max", 2048, "maximum edge length in pixels for display images")
+	flag.IntVar(&opts.Quality, "quality", 80, "JPEG quality (1-100)")
+	flag.Parse()
+
+	if err := Build(opts); err != nil {
+		fmt.Fprintln(os.Stderr, "gthumb:", err)
+		os.Exit(1)
 	}
-	ite := results[0]
-	valueRaw, err := ite.Value()
-	log.PanicIf(err)
-	value := valueRaw.([]uint16)[0]
-	if value != Horizontal {
-		// Must rotate
-		if value == Rotate180 {
-			thumbnail = transform.Rotate(thumbnail, 180, &transform.RotationOptions{})
-		} else {
-			// TODO: Handle other orientations
-			fmt.Println("WARNING: Unhandled orientation", value)
-		}
-	} else {
-		// Save as-is
-	}
-	// Crop to square, should try to center the cropped rectangle later
-	thumbnail = transform.Crop(thumbnail, image.Rect(0, 0, int(minWidth), int(minWidth)))
-	if err := imgio.Save("examples/thumb.jpg", thumbnail, imgio.JPEGEncoder(THUMB_QUALITY)); err != nil {
-		panic(err)
-	}
+	fmt.Println("Gallery written to", opts.Out)
 }
