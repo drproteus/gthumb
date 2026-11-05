@@ -34,5 +34,8 @@ go.work.sum
 *.html
 main
 examples/*
+!examples/*/
+!examples/*/*.jpg
+!examples/ATTRIBUTION.md
 !examples/image.jpg
 public/
